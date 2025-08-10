@@ -100,9 +100,11 @@ tasks.json
 .taskmaster/reports/
 .taskmaster/state.json
 *.mcp.json
-scripts/
 .cursor/mcp.json
 .taskmasterconfig
 .windsurfrules
 .cursor/rules/dev_workflow.mdc
 .cursor/rules/taskmaster.mdc
+
+# Nix
+.direnv/
