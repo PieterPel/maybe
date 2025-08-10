@@ -31,7 +31,10 @@
       devShells = forEachSystem (
         system:
         let
-          pkgs = nixpkgs.legacyPackages.${system};
+          pkgs = import nixpkgs {
+            inherit system;
+            config.allowUnfree = true;
+          };
         in
         {
           default = devenv.lib.mkShell {
@@ -41,6 +44,7 @@
                 # https://devenv.sh/reference/options/
                 packages = with pkgs; [
                   libyaml
+                  steam-run
                 ];
 
                 languages = {
@@ -50,9 +54,24 @@
                   };
                 };
 
+                services = {
+                  postgres = {
+                    enable = true;
+                    port = 5432;
+                    listen_addresses = "localhost";
+                    createDatabase = true;
+                  };
+                  redis = {
+                    enable = true;
+                    port = 6379;
+                  };
+                };
+
                 enterShell = ''
                   bundle install
                 '';
+
+                cachix.enable = false;
               }
             ];
           };
