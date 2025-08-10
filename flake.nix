@@ -1,82 +1,62 @@
 {
-  description = "Ruby on Rails development environment";
-
   inputs = {
-    nixpkgs.url = "nixpkgs";
-    flake-utils.url = "github:numtide/flake-utils";
-    nix-filter.url = "github:numtide/nix-filter";
+    nixpkgs.url = "github:cachix/devenv-nixpkgs/rolling";
+    systems.url = "github:nix-systems/default";
+    devenv.url = "github:cachix/devenv";
+    devenv.inputs.nixpkgs.follows = "nixpkgs";
+  };
+
+  nixConfig = {
+    extra-trusted-public-keys = "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=";
+    extra-substituters = "https://devenv.cachix.org";
   };
 
   outputs =
     {
       self,
       nixpkgs,
-      flake-utils,
-      nix-filter,
-    }:
-    flake-utils.lib.eachDefaultSystem (
-      system:
-      let
-        overlays = [
-          (self: super: {
-            ruby = pkgs.ruby_3_4;
-          })
-        ];
-        pkgs = import nixpkgs { inherit overlays system; };
+      devenv,
+      systems,
+      ...
+    }@inputs:
+    let
+      forEachSystem = nixpkgs.lib.genAttrs (import systems);
+    in
+    {
+      packages = forEachSystem (system: {
+        devenv-up = self.devShells.${system}.default.config.procfileScript;
+        devenv-test = self.devShells.${system}.default.config.test;
+      });
 
-        rubyEnv = pkgs.bundlerEnv {
-          # The full app environment with dependencies
-          name = "rails-env";
-          inherit (pkgs) ruby;
-          gemdir = ./.; # Points to Gemfile.lock and gemset.nix
-        };
+      devShells = forEachSystem (
+        system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+        in
+        {
+          default = devenv.lib.mkShell {
+            inherit inputs pkgs;
+            modules = [
+              {
+                # https://devenv.sh/reference/options/
+                packages = with pkgs; [
+                  libyaml
+                ];
 
-        updateDeps = pkgs.writeScriptBin "update-deps" (
-          builtins.readFile (
-            pkgs.replaceVars ./scripts/update.sh {
-              bundix = "${pkgs.bundix}/bin/bundix";
-              bundler = "${rubyEnv.bundler}/bin/bundler";
-            }
-          )
-        );
-      in
-      {
-        apps.default = {
-          type = "app";
-          program = "${rubyEnv}/bin/rails";
-        };
+                languages = {
+                  ruby = {
+                    enable = true;
+                    package = pkgs.ruby_3_4;
+                  };
+                };
 
-        devShells = rec {
-          default = run;
-
-          run = pkgs.mkShell {
-            buildInputs = [
-              rubyEnv
-              rubyEnv.wrappedRuby
-              updateDeps
+                enterShell = ''
+                  bundle install
+                '';
+              }
             ];
-
-            shellHook = ''
-              ${rubyEnv}/bin/rails --version
-            '';
           };
-        };
-
-        packages = {
-          default = rubyEnv;
-
-          docker = pkgs.dockerTools.buildImage {
-            name = "rails-app";
-            tag = "latest";
-            fromImage = pkgs.dockerTools.pullImage {
-              imageName = "ubuntu";
-              finalImageTag = "20.04";
-              imageDigest = "sha256:a06ae92523384c2cd182dcfe7f8b2bf09075062e937d5653d7d0db0375ad2221";
-              sha256 = "sha256-d249m1ZqcV72jfEcHDUn+KuOCs8WPaBJRcZotJjVW0o=";
-            };
-            config.Cmd = [ "${rubyEnv}/bin/bundler" ];
-          };
-        };
-      }
-    );
+        }
+      );
+    };
 }

@@ -108,3 +108,7 @@ tasks.json
 
 # Nix
 .direnv/
+.devenv/
+
+# Backup
+*.backup
