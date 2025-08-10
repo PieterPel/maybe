@@ -1,4 +1,4 @@
-require 'csv'
+require "csv"
 
 CSV::DateMatcher     = / \A(?: (\w+,?\s+)?\w+\s+\d{1,2},?\s+\d{2,4} |
                             \d{4}-\d{2}-\d{2} |
