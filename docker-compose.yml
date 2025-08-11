@@ -47,7 +47,7 @@ x-rails-env: &rails_env
 name: perhaps
 services:
   web:
-    image: ghcr.io/PieterPel/perhaps:latest
+    image: ghcr.io/pieterpel/perhaps:latest
     volumes:
       - app-storage:/rails/storage
     ports:
@@ -64,7 +64,7 @@ services:
       - perhaps_net
 
   worker:
-    image: ghcr.io/PieterPel/perhaps:latest
+    image: ghcr.io/pieterpel/perhaps:latest
     command: bundle exec sidekiq
     restart: unless-stopped
     depends_on:
@@ -76,7 +76,7 @@ services:
       - perhaps_net
 
   db:
-    image: postgres:16
+    image: quay.io/postgres:16
     restart: unless-stopped
     volumes:
       - postgres-data:/var/lib/postgresql/data
@@ -91,7 +91,7 @@ services:
       - perhaps_net
 
   redis:
-    image: redis:latest
+    image: quay.io/postgres:1r6edis:latest
     restart: unless-stopped
     volumes:
       - redis-data:/data
